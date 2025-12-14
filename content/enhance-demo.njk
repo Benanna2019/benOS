@@ -1,0 +1,100 @@
+---
+layout: layouts/base.njk
+title: Enhance Demo - Using Custom Elements in Nunjucks
+initialState:
+  user: "Ben Patton"
+  role: "Developer"
+  message: "This state was passed from front matter!"
+---
+
+<h1>{{ title }}</h1>
+
+<div class="demo-section">
+  <h2>1. Using the Paired Shortcode</h2>
+  <p>You can wrap any HTML content with Enhance custom elements:</p>
+  
+  {% enhance %}
+    <my-header></my-header>
+  {% endenhance %}
+</div>
+
+<div class="demo-section">
+  <h2>2. Multiple Elements Together</h2>
+  <p>You can use multiple custom elements in a single shortcode:</p>
+  
+  {% enhance %}
+    <my-header></my-header>
+    <div>
+      <p>Regular HTML content works fine alongside custom elements.</p>
+    </div>
+    <my-footer></my-footer>
+  {% endenhance %}
+</div>
+
+<div class="demo-section">
+  <h2>3. Single Element Shortcode</h2>
+  <p>Render a single element directly:</p>
+  
+  {% enhanceElement "my-header" %}
+</div>
+
+<div class="demo-section">
+  <h2>4. Nested in Markdown</h2>
+  <p>Since this works in any template, you can even use it in Markdown content!</p>
+</div>
+
+<div class="demo-section">
+  <h2>5. State Passing</h2>
+  <p>The <code>initialState</code> from the front matter is available to all elements:</p>
+  
+  {% enhance %}
+    <my-footer></my-footer>
+  {% endenhance %}
+  
+  <p>Check the footer above - it should show the state from the front matter.</p>
+</div>
+
+<div class="demo-section">
+  <h2>6. Interactive Element (SSR + Client-Side)</h2>
+  <p>This counter is server-side rendered, then enhanced with client-side interactivity:</p>
+  
+  {% enhance %}
+    <example-counter></example-counter>
+  {% endenhance %}
+  
+  <p>The counter is fully rendered by the server (great for SEO), then JavaScript adds interactivity!</p>
+</div>
+
+<div class="demo-section">
+  <h2>How This Works</h2>
+  <ul>
+    <li>✅ Custom elements are defined in <code>elements/*.mjs</code></li>
+    <li>✅ Elements are server-side rendered with <code>@enhance/ssr</code></li>
+    <li>✅ Works in Nunjucks, Liquid, Markdown, HTML, and .11ty.js files</li>
+    <li>✅ State can be passed via front matter, data files, or global data</li>
+    <li>✅ Client-side JavaScript can enhance elements after SSR</li>
+  </ul>
+</div>
+
+<style>
+  .demo-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+  }
+  
+  .demo-section h2 {
+    margin-top: 0;
+    color: #333;
+  }
+  
+  .demo-section code {
+    background: #fff;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+  }
+</style>
+

@@ -1,0 +1,88 @@
+---
+layout: layouts/admin.njk
+title: Music Library
+eleventyExcludeFromCollections: true
+---
+
+<style>
+  [data-auth-state="loading"] [data-music-wrapper],
+  [data-auth-state="logged-out"] [data-music-wrapper],
+  [data-auth-state="denied"] [data-music-wrapper] {
+    display: none;
+  }
+  
+  [data-auth-state="loading"] [data-auth-check],
+  [data-auth-state="logged-out"] [data-auth-check],
+  [data-auth-state="denied"] [data-auth-check] {
+    display: block;
+  }
+  
+  [data-auth-state="logged-in"] [data-auth-check] {
+    display: none;
+  }
+  
+  [data-auth-state="logged-in"] [data-music-wrapper] {
+    display: block;
+  }
+</style>
+
+<div class="admin-container" data-auth-state="loading">
+  <div class="admin-header">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <h1>Music Library</h1>
+      <a href="/admin/" style="font-size: 0.875rem; color: var(--color-text-muted);">← Back to Dashboard</a>
+    </div>
+    <p>Upload and manage your music collection.</p>
+  </div>
+  
+  <div data-auth-check class="not-admin-message">
+    <h2>Loading...</h2>
+    <p>Checking permissions...</p>
+  </div>
+  
+  <div data-music-wrapper>
+    {% enhance %}
+      <music-uploader></music-uploader>
+    {% endenhance %}
+  </div>
+</div>
+
+<script type="module">
+
+  // Small helper so we can write HTML without awkward quote escaping
+  const html = (strings, ...values) =>
+    strings.reduce((out, str, i) => out + str + (values[i] ?? ""), "");
+
+  const container = document.querySelector('[data-auth-state]');
+  const authCheck = document.querySelector('[data-auth-check]');
+  
+  async function checkAuth() {
+    try {
+      const user = await db.getAuth();
+      if (user && user.email === 'bass41992ben@gmail.com') {
+        container.setAttribute('data-auth-state', 'logged-in');
+      } else if (user) {
+        container.setAttribute('data-auth-state', 'denied');
+        authCheck.innerHTML = html`
+          <h2>Access Denied</h2>
+          <p>You don't have permission.</p>
+          <p><a href="/admin/">← Back</a></p>
+        `;
+      } else {
+        container.setAttribute('data-auth-state', 'logged-out');
+        authCheck.innerHTML = html`
+          <h2>Please Sign In</h2>
+          <p><a href="/admin/">Sign in here</a></p>
+        `;
+      }
+    } catch (e) {
+      container.setAttribute('data-auth-state', 'logged-out');
+      authCheck.innerHTML = html`
+        <h2>Please Sign In</h2>
+        <p><a href="/admin/">Sign in here</a></p>
+      `;
+    }
+  }
+  
+  checkAuth();
+</script>

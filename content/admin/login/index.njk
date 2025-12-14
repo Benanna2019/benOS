@@ -1,0 +1,43 @@
+---
+layout: layouts/base.njk
+title: Admin Login
+eleventyExcludeFromCollections: true
+---
+
+<style>
+  .login-page {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 4rem 0;
+  }
+
+  .login-card {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-white);
+    border-radius: 10px;
+    padding: 2rem;
+  }
+
+  .login-card h1 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .login-card p {
+    font-family: var(--font-family-ui);
+    color: var(--color-text-muted);
+    font-size: 1rem;
+  }
+</style>
+
+<div class="login-page">
+  <div class="login-card">
+    <h1>Admin Sign In</h1>
+    <p>Sign in to access the admin area.</p>
+    {% enhance %}
+      <auth-login></auth-login>
+    {% endenhance %}
+  </div>
+</div>
+
+

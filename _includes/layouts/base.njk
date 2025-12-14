@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="{{ metadata.language }}">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{{ title or metadata.title }}</title>
+		<meta name="description" content="{{ description or metadata.description }}">
+		<link rel="alternate" href="/feed/feed.xml" type="application/atom+xml" title="{{ metadata.title }}">
+		
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+		
+		<style>
+		:root {
+			--font-serif: 'Merriweather', serif;
+			--font-sans: 'Inter', system-ui, sans-serif;
+		}
+		</style>
+
+		{#- Add the contents of a file to the bundle #}
+		<style>{% include "css/index.css" %}</style>
+
+		{#- Render the CSS bundle using inlined CSS #}
+		<style>{% getBundle "css" %}</style>
+
+	{#- Add the heading-anchors web component to the JavaScript bundle #}
+	<script type="module">{% include "node_modules/@zachleat/heading-anchors/heading-anchors.js" %}</script>
+
+	<script src="{{ "/assets/instantdb.js" | url }}"></script>
+	<script type="module">
+		import { init, i, id } from "/assets/instantdb.js";
+	
+		const APP_ID = '4744b006-aabe-48be-8b67-08bc76fcbd72';
+		const ADMIN_EMAIL = 'bass41992ben@gmail.com';
+		
+		// Initialize the database
+		const db = init({ appId: APP_ID });
+		
+		// Expose to window for other modules
+		{# window.db = db;
+		window.id = id;
+		window.ADMIN_EMAIL = ADMIN_EMAIL; #}
+	</script>
+</head>
+	<body>
+		<a href="#main" id="skip-link" class="visually-hidden">Skip to main content</a>
+
+		<header>
+			<div class="header-inner">
+				<a href="/" class="header-brand-wrapper">
+					<img src="{{ '/img/bp-logo.jpg' | url }}" alt="Ben Patton Logo" class="header-logo">
+					<span class="header-brand">{{ metadata.title }}</span>
+				</a>
+
+				<div class="header-actions">
+					<a href="/subscribe/" class="btn btn-primary">Subscribe</a>
+					{% enhance %}
+						<auth-status></auth-status>
+					{% endenhance %}
+				</div>
+			</div>
+			
+			<div class="container" style="border-top: 1px solid var(--color-border); padding: 1rem 0; display: flex; justify-content: center;">
+				<nav>
+					<ul class="nav">
+					{%- for entry in collections.all | eleventyNavigation %}
+						<li class="nav-item"><a href="{{ entry.url }}"{% if entry.url == page.url %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>
+					{%- endfor %}
+					</ul>
+				</nav>
+			</div>
+		</header>
+
+		<main id="main">
+			<div class="container">
+				<heading-anchors>
+					{{ content | safe }}
+				</heading-anchors>
+			</div>
+		</main>
+
+		<footer>
+			<div class="footer-inner">
+				<div class="footer-brand">
+					<h3>Helping You Flourish</h3>
+					<p>Helping individuals and teams understand themselves for renewed progress, joy, and purpose in their work and life.</p>
+					<p><a href="mailto:hello@benapatton.com">Get in Touch</a></p>
+				</div>
+				<div class="footer-links">
+					<h3>{{ metadata.title }}</h3>
+					<div class="grid-3 mt-0">
+						<div>
+							<h4>Content</h4>
+							<ul style="list-style: none; padding: 0;">
+								<li><a href="/articles/">Articles</a></li>
+								<li><a href="/tech-blog/">Tech Blog</a></li>
+							</ul>
+						</div>
+						<div>
+							<h4>Feeds</h4>
+							<ul style="list-style: none; padding: 0;">
+								<li><a href="/feed/feed.xml">Tech Blog (Atom)</a></li>
+								<li><a href="/feed/articles.xml">Articles (RSS)</a></li>
+							</ul>
+						</div>
+						<div>
+							<h4>Connect</h4>
+							<p>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</footer>
+
+	<!-- Global Audio Player - persists across pages -->
+	{% enhance %}
+		<audio-player></audio-player>
+	{% endenhance %}
+
+	<!-- This page `{{ page.url }}` was built on {% currentBuildDate %} -->
+	<script type="module" src="{% getBundleFileUrl "js" %}"></script>
+</body>
+</html>

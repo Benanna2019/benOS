@@ -1,0 +1,263 @@
+---
+layout: layouts/base.njk
+title: Progressive Enhancement with @enhance/element
+initialState:
+  todos:
+    - id: 1
+      title: "Learn Enhance SSR"
+      completed: false
+    - id: 2
+      title: "Build reactive components"
+      completed: true
+    - id: 3
+      title: "Deploy to production"
+      completed: false
+---
+
+<h1>{{ title }}</h1>
+
+<div class="intro" style="max-width: 800px; margin: 0 auto 3rem;">
+  <p>
+    These components demonstrate <strong>progressive enhancement</strong>: 
+    they render server-side for speed and SEO, then become reactive on the client 
+    using <code>@enhance/element</code>.
+  </p>
+  
+  <div style="background: #f0f8ff; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0;">
+    <h3 style="margin-top: 0;">The Pattern</h3>
+    <ol>
+      <li>✅ <strong>Server renders</strong> the initial HTML (fast, SEO-friendly)</li>
+      <li>✅ <strong>Client enhances</strong> with reactivity (when JS loads)</li>
+      <li>✅ <strong>Morphdom updates</strong> only what changed (efficient)</li>
+      <li>✅ <strong>Works without JS</strong> (progressive enhancement!)</li>
+    </ol>
+  </div>
+</div>
+
+<div class="demo-section">
+  <h2>1. Theme Toggle - Attribute Tracking</h2>
+  <p>
+    This component uses <code>@enhance/element</code> to track the 
+    <code>theme</code> attribute. When you click, it updates the attribute, 
+    which automatically triggers a re-render!
+  </p>
+  
+  <div style="text-align: center; margin: 2rem 0;">
+    {% enhance %}
+      <theme-toggle theme="light"></theme-toggle>
+    {% endenhance %}
+  </div>
+  
+  <details style="margin-top: 1rem;">
+    <summary style="cursor: pointer; font-weight: bold;">🔍 View Source</summary>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;"><code>// elements/theme-toggle.mjs
+enhance('theme-toggle', {
+  attrs: ['theme'], // Track attribute
+  
+  render({ html, state }) {
+    const { theme } = state.attrs
+    return html`&lt;button&gt;${theme}&lt;/button&gt;`
+  },
+  
+  connected(el) {
+    el.querySelector('button').onclick = () => {
+      // Updating attribute triggers auto re-render!
+      el.setAttribute('theme', 
+        el.getAttribute('theme') === 'dark' ? 'light' : 'dark'
+      )
+    }
+  }
+})</code></pre>
+  </details>
+</div>
+
+<div class="demo-section">
+  <h2>2. Todo List - Full Reactivity</h2>
+  <p>
+    A complete todo list with add, toggle, and delete functionality. 
+    State is managed locally in the component, and Morphdom efficiently 
+    updates only the changed parts of the DOM.
+  </p>
+  
+  {% enhance %}
+    <todo-list heading="My Todo List"></todo-list>
+  {% endenhance %}
+  
+  <details style="margin-top: 1rem;">
+    <summary style="cursor: pointer; font-weight: bold;">🔍 View Source</summary>
+    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;"><code>// elements/todo-list.mjs
+enhance('todo-list', {
+  attrs: ['heading'],
+  
+  init(el) {
+    el.todos = [] // Local state
+  },
+  
+  render({ html, state }) {
+    const { heading } = state.attrs
+    const todos = this.todos
+    return html`
+      &lt;h2&gt;${heading}&lt;/h2&gt;
+      &lt;ul&gt;${todos.map(t => `&lt;li&gt;${t.title}&lt;/li&gt;`).join('')}&lt;/ul&gt;
+    `
+  },
+  
+  addTodo(title) {
+    this.todos.push({ title, completed: false })
+    this.process() // Trigger re-render
+  }
+})</code></pre>
+  </details>
+</div>
+
+<div class="demo-section">
+  <h2>3. Example Counter - Custom Element (Vanilla)</h2>
+  <p>
+    For comparison, here's a counter using vanilla custom elements 
+    (without <code>@enhance/element</code>). Notice it requires more 
+    manual DOM manipulation.
+  </p>
+  
+  <div style="text-align: center; margin: 2rem 0;">
+    {% enhance %}
+      <example-counter></example-counter>
+    {% endenhance %}
+  </div>
+</div>
+
+<div class="demo-section">
+  <h2>How It Works</h2>
+  
+  <h3>Server-Side (SSR)</h3>
+  <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;"><code>// Your element function
+export default function TodoList({ html, state }) {
+  return html`
+    &lt;div&gt;Initial HTML here&lt;/div&gt;
+    
+    &lt;script type="module"&gt;
+      import enhance from '@enhance/element'
+      // Enhancement code...
+    &lt;/script&gt;
+  `
+}</code></pre>
+  
+  <h3>Client-Side (Enhancement)</h3>
+  <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto;"><code>enhance('todo-list', {
+  attrs: ['attr1'],     // Track attributes
+  keys: ['key1'],       // Track store keys
+  init(el) {},          // One-time setup
+  render({ html, state }) {}, // Re-render function
+  connected(el) {},     // Add event listeners
+  disconnected(el) {}   // Cleanup
+})</code></pre>
+</div>
+
+<div class="demo-section">
+  <h2>Key Benefits</h2>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">⚡️ Fast Initial Load</h3>
+      <p>Server renders complete HTML. No waiting for JS to paint the UI.</p>
+    </div>
+    
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">🎯 SEO Friendly</h3>
+      <p>Crawlers see real HTML content, not empty divs waiting for hydration.</p>
+    </div>
+    
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">🔄 Reactive Updates</h3>
+      <p>Attribute changes trigger automatic re-renders with Morphdom.</p>
+    </div>
+    
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">♿️ Accessible</h3>
+      <p>Works without JavaScript. Progressive enhancement at its finest.</p>
+    </div>
+    
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">🎨 No Framework Lock-in</h3>
+      <p>Standard web components. Use anywhere, migrate anytime.</p>
+    </div>
+    
+    <div style="padding: 1.5rem; background: #f9f9f9; border-radius: 8px;">
+      <h3 style="margin-top: 0;">🔧 Developer Friendly</h3>
+      <p>Simple API, automatic updates, less boilerplate than vanilla.</p>
+    </div>
+  </div>
+</div>
+
+<div class="demo-section">
+  <h2>Learn More</h2>
+  <ul>
+    <li><a href="/PROGRESSIVE-ENHANCEMENT-GUIDE.html">Complete Progressive Enhancement Guide</a></li>
+    <li><a href="/ENHANCE-INTEGRATION.html">Enhance Integration Documentation</a></li>
+    <li><a href="https://github.com/enhance-dev/enhance-element">@enhance/element on GitHub</a></li>
+    <li><a href="https://github.com/enhance-dev/enhance-store">@enhance/store on GitHub</a></li>
+  </ul>
+</div>
+
+<style>
+  .intro {
+    line-height: 1.6;
+  }
+  
+  .demo-section {
+    max-width: 1000px;
+    margin: 3rem auto;
+    padding: 2rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+  }
+  
+  .demo-section h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #0066cc;
+    padding-bottom: 0.5rem;
+  }
+  
+  .demo-section h3 {
+    color: #0066cc;
+    margin-top: 2rem;
+  }
+  
+  .demo-section code {
+    background: #f5f5f5;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+  }
+  
+  .demo-section pre code {
+    background: none;
+    padding: 0;
+  }
+  
+  details {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fafafa;
+  }
+  
+  details[open] {
+    padding-bottom: 0;
+  }
+  
+  summary {
+    margin: -1rem;
+    padding: 1rem;
+    background: #f0f0f0;
+  }
+  
+  details[open] summary {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 1rem;
+  }
+</style>
+

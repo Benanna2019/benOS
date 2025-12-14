@@ -1,0 +1,155 @@
+---
+layout: layouts/admin.njk
+title: Drafts
+eleventyExcludeFromCollections: true
+---
+
+<style>
+  [data-auth-state="loading"] [data-content],
+  [data-auth-state="logged-out"] [data-content],
+  [data-auth-state="denied"] [data-content] {
+    display: none;
+  }
+  
+  [data-auth-state="loading"] [data-auth-check],
+  [data-auth-state="logged-out"] [data-auth-check],
+  [data-auth-state="denied"] [data-auth-check] {
+    display: block;
+  }
+  
+  [data-auth-state="logged-in"] [data-auth-check] {
+    display: none;
+  }
+  
+  [data-auth-state="logged-in"] [data-content] {
+    display: block;
+  }
+  
+  .loading-drafts {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-muted);
+  }
+</style>
+
+<div class="admin-container" data-auth-state="loading">
+  <div class="admin-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1>Drafts</h1>
+        <p>Manage your unpublished content.</p>
+      </div>
+      <div>
+         <a href="/admin/" style="font-size: 0.875rem; color: var(--color-text-muted); margin-right: 1rem;">← Back</a>
+         <a href="/admin/editor/" class="btn btn-primary">+ New Post</a>
+      </div>
+    </div>
+  </div>
+  
+  <div data-auth-check class="not-admin-message">
+    <h2>Loading...</h2>
+    <p>Checking permissions...</p>
+  </div>
+  
+  <div data-content>
+    {# <div data-loading class="loading-drafts">Loading drafts...</div> #}
+    
+    <div data-drafts-list class="drafts-list" style="display: none;"></div>
+    
+    <div data-empty class="not-admin-message" style="display: none;">
+      <p>No drafts yet. Start writing!</p>
+      <a href="/admin/editor/" class="btn btn-primary">Create Your First Post</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+
+  // Small helper so we can write HTML without awkward quote escaping
+  const html = (strings, ...values) =>
+    strings.reduce((out, str, i) => out + str + (values[i] ?? ""), "");
+
+  const container = document.querySelector('[data-auth-state]');
+  const authCheck = document.querySelector('[data-auth-check]');
+  const loadingEl = document.querySelector('[data-loading]');
+  const listEl = document.querySelector('[data-drafts-list]');
+  const emptyEl = document.querySelector('[data-empty]');
+  
+  async function loadDrafts() {
+    try {
+      const user = await db.getAuth();
+      if (user && user.email === 'bass41992ben@gmail.com') {
+        container.setAttribute('data-auth-state', 'logged-in');
+        
+        // Subscribe to drafts
+        db.subscribeQuery({ drafts: {} }, (resp) => {
+          if (resp.error) {
+            loadingEl.innerHTML = '<p>Error loading drafts</p>';
+            return;
+          }
+          
+          // Once we have a response, remove the loader so it can't linger
+          if (loadingEl) loadingEl.remove();
+          
+          const drafts = resp.data.drafts || [];
+          
+          if (drafts.length === 0) {
+            emptyEl.style.display = 'block';
+            listEl.style.display = 'none';
+            return;
+          }
+          
+          // Sort by updatedAt desc
+          drafts.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+          
+          emptyEl.style.display = 'none';
+          listEl.style.display = 'flex';
+          
+          listEl.innerHTML = drafts.map(draft => {
+            const date = draft.updatedAt 
+              ? new Date(draft.updatedAt).toLocaleDateString('en-US', { 
+                  month: 'short', day: 'numeric', year: 'numeric' 
+                })
+              : 'Unknown date';
+            
+            const title = draft.title || 'Untitled';
+            const type = draft.contentType === 'articles' ? 'Article' : 'Tech Blog';
+            
+            return html`
+              <a href="/admin/editor/?id=${draft.id}" class="draft-card">
+                <div class="draft-info">
+                  <h3>${title}</h3>
+                  <div class="draft-meta">${type} • Last edited ${date}</div>
+                </div>
+                <span class="draft-status" data-status="${draft.status || 'draft'}">${draft.status || 'draft'}</span>
+              </a>
+            `;
+          }).join('');
+        });
+        
+      } else if (user) {
+        container.setAttribute('data-auth-state', 'denied');
+        authCheck.innerHTML = html`
+          <h2>Access Denied</h2>
+          <p>You don't have permission.</p>
+          <p><a href="/admin/">← Back</a></p>
+        `;
+      } else {
+        container.setAttribute('data-auth-state', 'logged-out');
+        authCheck.innerHTML = html`
+          <h2>Please Sign In</h2>
+          <p><a href="/admin/">Sign in here</a></p>
+        `;
+      }
+    } catch (e) {
+      console.error(e);
+      container.setAttribute('data-auth-state', 'logged-out');
+      authCheck.innerHTML = html`
+        <h2>Please Sign In</h2>
+        <p><a href="/admin/">Sign in here</a></p>
+      `;
+    }
+  }
+  
+  loadDrafts();
+</script>

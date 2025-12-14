@@ -1,0 +1,83 @@
+---
+layout: layouts/base.njk
+---
+{# Only include the syntax highlighter CSS on blog posts, included with the CSS per-page bundle #}
+<style>{% include "node_modules/prismjs/themes/prism-okaidia.css" %}</style>
+<style>{% include "css/prism-diff.css" %}</style>
+
+<div class="container" style="padding-top: 1.2rem">
+	{# --- ARTICLE HEADER --- #}
+	<div class="article-header">
+		<div>
+			<a href="/articles/" style="font-family: var(--font-family-ui); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted); margin-bottom: 2rem; display: block;">← Back to Articles</a>
+			<h1>{{ title }}</h1>
+		</div>
+		<div class="article-header-meta">
+			<div style="font-size: 3rem; font-family: var(--font-family-headings); font-weight: 700; color: var(--color-text-main); line-height: 1; margin-bottom: 0.5rem;">
+				{% if page.date.getMonth() > 9 %}17.{% else %}08.{% endif %}
+			</div>
+			<div style="margin-bottom: 0.5rem;">Issue</div>
+			
+			<div style="margin-top: 2rem; color: var(--color-text-main);">
+				By {{ author or "Ben Patton" }}
+			</div>
+			<div style="color: var(--color-text-muted);">
+				{{ page.date | readableDate }}
+			</div>
+		</div>
+	</div>
+
+	{# --- FEATURED IMAGE --- #}
+	{% if image %}
+		<img src="{{ image }}" alt="{{ title }}" class="article-featured-image">
+	{% else %}
+		<img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=2070&auto=format&fit=crop" alt="Fallback Image" class="article-featured-image">
+	{% endif %}
+
+	{# --- MAIN CONTENT GRID --- #}
+	<div class="article-main-grid">
+		{# Left Sidebar #}
+		<aside class="article-sidebar">
+			{# Tags #}
+			<div class="article-tags" style="margin-bottom: 2rem; justify-content: flex-end;">
+				{% for tag in tags | filterTagList %}
+					<a href="/tags/{{ tag | slugify }}/" class="post-tag">{{ tag }}</a>
+				{% endfor %}
+			</div>
+
+			{# Deck / Pull Quote #}
+			{% if description %}
+			<div class="pull-quote">
+				{{ description }}
+			</div>
+			{% endif %}
+		</aside>
+
+		{# Right Content #}
+		<div class="article-content">
+			{{ content | safe }}
+		</div>
+	</div>
+
+	{# --- NEXT/PREV NAVIGATION --- #}
+	{%- if collections.articles %}
+	{%- set previousPost = collections.articles | getPreviousCollectionItem %}
+	{%- set nextPost = collections.articles | getNextCollectionItem %}
+	{%- if nextPost or previousPost %}
+	<div style="border-top: 1px solid var(--color-border); margin-top: 4rem; padding-top: 2rem; display: flex; justify-content: space-between;">
+		{%- if previousPost %}
+		<div>
+			<div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted);">Previous</div>
+			<a href="{{ previousPost.url }}" style="font-family: var(--font-family-headings); font-size: 1.25rem;">{{ previousPost.data.title }}</a>
+		</div>
+		{% endif %}
+		{%- if nextPost %}
+		<div style="text-align: right;">
+			<div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted);">Next</div>
+			<a href="{{ nextPost.url }}" style="font-family: var(--font-family-headings); font-size: 1.25rem;">{{ nextPost.data.title }}</a>
+		</div>
+		{% endif %}
+	</div>
+	{%- endif %}
+	{%- endif %}
+</div>

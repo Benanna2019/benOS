@@ -1,0 +1,120 @@
+---
+layout: layouts/admin.njk
+title: Admin Dashboard
+eleventyExcludeFromCollections: true
+---
+
+<style>
+  /* Auth state logic */
+  [data-auth-state="loading"] .admin-dashboard,
+  [data-auth-state="logged-out"] .admin-dashboard {
+    display: none;
+  }
+  
+  [data-auth-state="loading"] .admin-login-box,
+  [data-auth-state="logged-in"] .admin-login-box {
+    display: none;
+  }
+  
+  [data-auth-state="logged-in"][data-is-admin="false"] .admin-dashboard {
+    display: none;
+  }
+  
+  [data-auth-state="logged-in"][data-is-admin="true"] .not-admin-message {
+    display: none;
+  }
+  
+  [data-auth-state="loading"] .not-admin-message,
+  [data-auth-state="logged-out"] .not-admin-message {
+    display: none;
+  }
+</style>
+
+<div class="admin-container" data-auth-state="loading">
+  
+  <!-- Login Form (shown when logged out) -->
+  <div class="admin-login-box">
+    <h2>Admin Sign In</h2>
+    <p style="color: var(--color-text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">
+      Sign in with your email to access the admin dashboard.
+    </p>
+    {% enhance %}
+      <auth-login></auth-login>
+    {% endenhance %}
+  </div>
+  
+  <!-- Not Admin Message -->
+  <div class="not-admin-message">
+    <h2>Access Denied</h2>
+    <p>You don't have permission to access this area.</p>
+    <p><a href="/">← Back to Home</a></p>
+  </div>
+  
+  <!-- Admin Dashboard (shown when logged in as admin) -->
+  <div class="admin-dashboard">
+    <div class="admin-header">
+      <h1>Admin Dashboard</h1>
+      <p>Welcome back! Manage your content and settings.</p>
+    </div>
+    
+    <div class="admin-grid">
+      <a href="/admin/editor/" class="admin-card">
+        <div class="admin-card-icon">📝</div>
+        <h3>Content Editor</h3>
+        <p>Write and publish blog posts</p>
+      </a>
+      
+      <a href="/admin/music/" class="admin-card">
+        <div class="admin-card-icon">🎵</div>
+        <h3>Music Library</h3>
+        <p>Upload and manage music</p>
+      </a>
+      
+      <a href="/admin/drafts/" class="admin-card">
+        <div class="admin-card-icon">📋</div>
+        <h3>Drafts</h3>
+        <p>View unpublished content</p>
+      </a>
+      
+      <a href="/admin/settings/" class="admin-card">
+        <div class="admin-card-icon">⚙️</div>
+        <h3>Settings</h3>
+        <p>Configure your site</p>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+
+  const container = document.querySelector('[data-auth-state]');
+  
+  async function checkAuth() {
+    try {
+      const user = await db.getAuth();
+      if (user) {
+        container.setAttribute('data-auth-state', 'logged-in');
+        container.setAttribute('data-is-admin', user.email === 'bass41992ben@gmail.com' ? 'true' : 'false');
+      } else {
+        container.setAttribute('data-auth-state', 'logged-out');
+      }
+    } catch (e) {
+      container.setAttribute('data-auth-state', 'logged-out');
+    }
+  }
+  
+  // Listen for auth events
+  document.addEventListener('auth-success', (e) => {
+    const user = e.detail.user;
+    container.setAttribute('data-auth-state', 'logged-in');
+    container.setAttribute('data-is-admin', user.email === 'bass41992ben@gmail.com' ? 'true' : 'false');
+  });
+  
+  document.addEventListener('auth-logout', () => {
+    container.setAttribute('data-auth-state', 'logged-out');
+    container.removeAttribute('data-is-admin');
+  });
+  
+  // Initial check
+  checkAuth();
+</script>

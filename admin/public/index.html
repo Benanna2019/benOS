@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Content Editor</title>
+  
+  <!-- Milkdown Editor (WYSIWYG that outputs markdown) -->
+  <script src="https://cdn.jsdelivr.net/npm/@milkdown/core@7.3.6/lib/index.es.js" type="module"></script>
+  
+  <!-- Marked for preview -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- Prism for code highlighting in preview -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --border-color: #30363d;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --sidebar-width: 280px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Layout */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr 1fr;
+      height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .sidebar-header .icon {
+      font-size: 1.25rem;
+    }
+    
+    .new-post-btn {
+      margin: 1rem;
+      padding: 0.625rem 1rem;
+      background: var(--accent);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    
+    .new-post-btn:hover {
+      background: var(--accent-hover);
+    }
+    
+    .file-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+    
+    .folder-group {
+      margin-bottom: 1rem;
+    }
+    
+    .folder-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.5rem;
+    }
+    
+    .file-item {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.875rem;
+    }
+    
+    .file-item:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .file-item.active {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+    
+    .file-item .title {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .file-item .date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.125rem;
+    }
+    
+    .file-item.active .date {
+      color: var(--bg-tertiary);
+    }
+    
+    /* Editor Panel */
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    
+    .panel-title {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .toolbar {
+      display: flex;
+      gap: 0.25rem;
+    }
+    
+    .toolbar button {
+      padding: 0.375rem 0.625rem;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.15s;
+    }
+    
+    .toolbar button:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--text-muted);
+    }
+    
+    .save-btn {
+      padding: 0.5rem 1rem !important;
+      background: var(--success) !important;
+      border-color: var(--success) !important;
+      color: white !important;
+      font-weight: 600;
+    }
+    
+    .save-btn:hover {
+      filter: brightness(1.1);
+    }
+    
+    .save-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* Frontmatter Editor */
+    .frontmatter {
+      padding: 1rem;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .frontmatter-field {
+      margin-bottom: 0.75rem;
+    }
+    
+    .frontmatter-field:last-child {
+      margin-bottom: 0;
+    }
+    
+    .frontmatter-field label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .frontmatter-field input {
+      width: 100%;
+      padding: 0.5rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+    
+    .frontmatter-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    /* Editor Area */
+    .editor-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    #editor {
+      flex: 1;
+      width: 100%;
+      padding: 1.5rem;
+      background: var(--bg-primary);
+      border: none;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      resize: none;
+      outline: none;
+    }
+    
+    #editor::placeholder {
+      color: var(--text-muted);
+    }
+    
+    /* Preview Panel */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .preview-content {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      background: var(--bg-primary);
+    }
+    
+    .preview-content h1 { font-size: 2rem; margin: 0 0 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+    .preview-content h2 { font-size: 1.5rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem; }
+    .preview-content h3 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+    .preview-content h4 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+    .preview-content p { margin: 0 0 1rem; line-height: 1.7; }
+    .preview-content ul, .preview-content ol { margin: 0 0 1rem; padding-left: 2rem; }
+    .preview-content li { margin: 0.25rem 0; line-height: 1.6; }
+    .preview-content a { color: var(--accent); text-decoration: none; }
+    .preview-content a:hover { text-decoration: underline; }
+    .preview-content code { 
+      background: var(--bg-tertiary); 
+      padding: 0.125rem 0.375rem; 
+      border-radius: 4px; 
+      font-size: 0.875em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .preview-content pre {
+      background: var(--bg-secondary);
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 0 0 1rem;
+    }
+    .preview-content pre code {
+      background: none;
+      padding: 0;
+    }
+    .preview-content blockquote {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      margin: 0 0 1rem;
+      color: var(--text-secondary);
+    }
+    .preview-content img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+    .preview-content hr {
+      border: none;
+      border-top: 1px solid var(--border-color);
+      margin: 2rem 0;
+    }
+    .preview-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 1rem;
+    }
+    .preview-content th, .preview-content td {
+      border: 1px solid var(--border-color);
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .preview-content th {
+      background: var(--bg-tertiary);
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+    
+    .modal h2 {
+      margin-bottom: 1rem;
+    }
+    
+    .modal-field {
+      margin-bottom: 1rem;
+    }
+    
+    .modal-field label {
+      display: block;
+      margin-bottom: 0.375rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    
+    .modal-field input, .modal-field select {
+      width: 100%;
+      padding: 0.625rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+    }
+    
+    .modal-field input:focus, .modal-field select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    
+    .modal-actions button {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
+    
+    .btn-cancel:hover {
+      background: var(--bg-tertiary);
+    }
+    
+    .btn-create {
+      background: var(--accent);
+      border: none;
+      color: var(--bg-primary);
+    }
+    
+    .btn-create:hover {
+      background: var(--accent-hover);
+    }
+    
+    /* Toast notifications */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    .toast.success {
+      border-color: var(--success);
+    }
+    
+    .toast.error {
+      border-color: var(--danger);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+    
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      gap: 1rem;
+    }
+    
+    .empty-state .icon {
+      font-size: 3rem;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="icon">📝</span>
+        <h1>Content Editor</h1>
+      </div>
+      
+      <button class="new-post-btn" onclick="showNewPostModal()">
+        + New Post
+      </button>
+      
+      <div class="file-list" id="fileList">
+        <!-- Files loaded dynamically -->
+      </div>
+    </aside>
+    
+    <!-- Editor Panel -->
+    <main class="editor-panel">
+      <div class="panel-header">
+        <span class="panel-title">Markdown Editor</span>
+        <div class="toolbar">
+          <button onclick="insertMarkdown('**', '**')" title="Bold">B</button>
+          <button onclick="insertMarkdown('*', '*')" title="Italic"><em>I</em></button>
+          <button onclick="insertMarkdown('# ', '')" title="Heading">#</button>
+          <button onclick="insertMarkdown('## ', '')" title="Heading 2">##</button>
+          <button onclick="insertMarkdown('- ', '')" title="List">•</button>
+          <button onclick="insertMarkdown('[', '](url)')" title="Link">🔗</button>
+          <button onclick="insertMarkdown('`', '`')" title="Code">&lt;/&gt;</button>
+          <button onclick="insertMarkdown('\n```\n', '\n```\n')" title="Code Block">{ }</button>
+          <button onclick="insertMarkdown('> ', '')" title="Quote">"</button>
+          <button class="save-btn" onclick="saveFile()" id="saveBtn" disabled>💾 Save</button>
+        </div>
+      </div>
+      
+      <div class="frontmatter" id="frontmatter" style="display: none;">
+        <div class="frontmatter-field">
+          <label>Title</label>
+          <input type="text" id="fm-title" placeholder="Post title">
+        </div>
+        <div class="frontmatter-field">
+          <label>Description</label>
+          <input type="text" id="fm-description" placeholder="Brief description">
+        </div>
+        <div class="frontmatter-field">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="fm-tags" placeholder="tag1, tag2, tag3">
+        </div>
+      </div>
+      
+      <div class="editor-area">
+        <textarea id="editor" placeholder="Start writing your content..."></textarea>
+      </div>
+    </main>
+    
+    <!-- Preview Panel -->
+    <aside class="preview-panel">
+      <div class="panel-header">
+        <span class="panel-title">Live Preview</span>
+      </div>
+      <div class="preview-content" id="preview">
+        <div class="empty-state">
+          <span class="icon">👀</span>
+          <p>Preview will appear here</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+  
+  <!-- New Post Modal -->
+  <div class="modal-overlay" id="newPostModal">
+    <div class="modal">
+      <h2>Create New Post</h2>
+      
+      <div class="modal-field">
+        <label>Folder</label>
+        <select id="new-folder">
+          <option value="tech-blog">tech-blog</option>
+          <option value="articles">articles</option>
+        </select>
+      </div>
+      
+      <div class="modal-field">
+        <label>Title</label>
+        <input type="text" id="new-title" placeholder="My New Post">
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideNewPostModal()">Cancel</button>
+        <button class="btn-create" onclick="createNewPost()">Create</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    // State
+    let currentFile = null
+    let originalContent = ''
+    let hasUnsavedChanges = false
+    
+    // Elements
+    const fileListEl = document.getElementById('fileList')
+    const editorEl = document.getElementById('editor')
+    const previewEl = document.getElementById('preview')
+    const frontmatterEl = document.getElementById('frontmatter')
+    const saveBtnEl = document.getElementById('saveBtn')
+    
+    // Configure marked
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      highlight: function(code, lang) {
+        if (Prism.languages[lang]) {
+          return Prism.highlight(code, Prism.languages[lang], lang)
+        }
+        return code
+      }
+    })
+    
+    // Load file list
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/files')
+        const data = await res.json()
+        renderFileList(data.files)
+      } catch (err) {
+        showToast('Failed to load files', 'error')
+        console.error(err)
+      }
+    }
+    
+    // Render file list grouped by folder
+    function renderFileList(files) {
+      const grouped = {}
+      
+      files.forEach(file => {
+        const folder = file.path.split('/')[0] || 'root'
+        if (!grouped[folder]) grouped[folder] = []
+        grouped[folder].push(file)
+      })
+      
+      fileListEl.innerHTML = Object.entries(grouped)
+        .map(([folder, files]) => `
+          <div class="folder-group">
+            <div class="folder-name">${folder}</div>
+            ${files.map(file => `
+              <div class="file-item" data-path="${file.path}" onclick="openFile('${file.path}')">
+                <span class="title">${file.title}</span>
+                ${file.date ? `<span class="date">${file.date}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `).join('')
+    }
+    
+    // Open a file
+    async function openFile(path) {
+      if (hasUnsavedChanges && !confirm('You have unsaved changes. Continue?')) {
+        return
+      }
+      
+      try {
+        const res = await fetch(`/api/file?path=${encodeURIComponent(path)}`)
+        const data = await res.json()
+        
+        currentFile = path
+        
+        // Parse frontmatter and content
+        const { frontmatter, content } = parseFrontmatter(data.content)
+        
+        // Update frontmatter fields
+        document.getElementById('fm-title').value = frontmatter.title || ''
+        document.getElementById('fm-description').value = frontmatter.description || ''
+        document.getElementById('fm-tags').value = Array.isArray(frontmatter.tags) 
+          ? frontmatter.tags.join(', ') 
+          : frontmatter.tags || ''
+        
+        frontmatterEl.style.display = 'block'
+        editorEl.value = content
+        originalContent = data.content
+        
+        updatePreview()
+        updateActiveFile()
+        setUnsavedChanges(false)
+        
+      } catch (err) {
+        showToast('Failed to open file', 'error')
+        console.error(err)
+      }
+    }
+    
+    // Parse frontmatter from markdown
+    function parseFrontmatter(text) {
+      const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+      
+      if (!match) {
+        return { frontmatter: {}, content: text }
+      }
+      
+      const frontmatter = {}
+      const lines = match[1].split('\n')
+      
+      lines.forEach(line => {
+        const colonIndex = line.indexOf(':')
+        if (colonIndex > 0) {
+          const key = line.slice(0, colonIndex).trim().replace(/^["']|["']$/g, '')
+          let value = line.slice(colonIndex + 1).trim().replace(/^["']|["']$/g, '')
+          
+          // Handle arrays
+          if (value.startsWith('[') && value.endsWith(']')) {
+            try {
+              value = JSON.parse(value)
+            } catch {}
+          }
+          
+          frontmatter[key] = value
+        }
+      })
+      
+      return { frontmatter, content: match[2] }
+    }
+    
+    // Build frontmatter from fields
+    function buildFrontmatter() {
+      const title = document.getElementById('fm-title').value
+      const description = document.getElementById('fm-description').value
+      const tags = document.getElementById('fm-tags').value
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t)
+      
+      // Get original frontmatter to preserve other fields
+      const { frontmatter: original } = parseFrontmatter(originalContent)
+      
+      return `---
+${original._id ? `"_id": "${original._id}"\n` : ''}title: "${title}"
+date: "${original.date || new Date().toISOString().split('T')[0]}"
+description: "${description}"
+${original.slug ? `slug: "${original.slug}"\n` : ''}${original.categories ? `categories: ${JSON.stringify(original.categories)}\n` : ''}tags: [${tags.map(t => `"${t}"`).join(', ')}]
+author: "${original.author || 'Ben Patton'}"
+${original.authorImage ? `authorImage: "${original.authorImage}"\n` : ''}${original.type ? `type: "${original.type}"\n` : ''}${original.url ? `url: "${original.url}"\n` : ''}---
+`
+    }
+    
+    // Save file
+    async function saveFile() {
+      if (!currentFile) return
+      
+      const fullContent = buildFrontmatter() + editorEl.value
+      
+      try {
+        const res = await fetch('/api/file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            path: currentFile, 
+            content: fullContent 
+          })
+        })
+        
+        if (res.ok) {
+          originalContent = fullContent
+          setUnsavedChanges(false)
+          showToast('Saved successfully!', 'success')
+        } else {
+          throw new Error('Save failed')
+        }
+      } catch (err) {
+        showToast('Failed to save', 'error')
+        console.error(err)
+      }
+    }
+    
+    // Insert markdown syntax
+    function insertMarkdown(before, after) {
+      const start = editorEl.selectionStart
+      const end = editorEl.selectionEnd
+      const text = editorEl.value
+      const selection = text.slice(start, end)
+      
+      editorEl.value = text.slice(0, start) + before + selection + after + text.slice(end)
+      
+      // Move cursor
+      const newCursorPos = start + before.length + selection.length
+      editorEl.setSelectionRange(newCursorPos, newCursorPos)
+      editorEl.focus()
+      
+      updatePreview()
+      setUnsavedChanges(true)
+    }
+    
+    // Update preview
+    function updatePreview() {
+      const content = editorEl.value
+      previewEl.innerHTML = marked.parse(content)
+      
+      // Re-run Prism on code blocks
+      previewEl.querySelectorAll('pre code').forEach(block => {
+        Prism.highlightElement(block)
+      })
+    }
+    
+    // Update active file highlight
+    function updateActiveFile() {
+      document.querySelectorAll('.file-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.path === currentFile)
+      })
+    }
+    
+    // Track unsaved changes
+    function setUnsavedChanges(value) {
+      hasUnsavedChanges = value
+      saveBtnEl.disabled = !value
+      saveBtnEl.textContent = value ? '💾 Save*' : '💾 Save'
+    }
+    
+    // New post modal
+    function showNewPostModal() {
+      document.getElementById('newPostModal').classList.add('active')
+      document.getElementById('new-title').value = ''
+      document.getElementById('new-title').focus()
+    }
+    
+    function hideNewPostModal() {
+      document.getElementById('newPostModal').classList.remove('active')
+    }
+    
+    async function createNewPost() {
+      const folder = document.getElementById('new-folder').value
+      const title = document.getElementById('new-title').value
+      
+      if (!title) {
+        showToast('Please enter a title', 'error')
+        return
+      }
+      
+      try {
+        const res = await fetch('/api/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder, filename: title, title })
+        })
+        
+        const data = await res.json()
+        
+        if (res.ok) {
+          hideNewPostModal()
+          await loadFiles()
+          await openFile(data.path)
+          showToast('Post created!', 'success')
+        } else {
+          showToast(data.error || 'Failed to create post', 'error')
+        }
+      } catch (err) {
+        showToast('Failed to create post', 'error')
+        console.error(err)
+      }
+    }
+    
+    // Toast notification
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast')
+      toast.textContent = message
+      toast.className = `toast ${type} show`
+      
+      setTimeout(() => {
+        toast.classList.remove('show')
+      }, 3000)
+    }
+    
+    // Event listeners
+    editorEl.addEventListener('input', () => {
+      updatePreview()
+      setUnsavedChanges(true)
+    })
+    
+    // Frontmatter changes
+    document.querySelectorAll('#frontmatter input').forEach(input => {
+      input.addEventListener('input', () => setUnsavedChanges(true))
+    })
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (!saveBtnEl.disabled) saveFile()
+      }
+      
+      // Escape to close modal
+      if (e.key === 'Escape') {
+        hideNewPostModal()
+      }
+    })
+    
+    // Warn before leaving with unsaved changes
+    window.addEventListener('beforeunload', (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    })
+    
+    // Initialize
+    loadFiles()
+  </script>
+</body>
+</html>
+

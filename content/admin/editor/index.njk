@@ -1,0 +1,81 @@
+---
+layout: layouts/admin.njk
+title: Content Editor
+eleventyExcludeFromCollections: true
+---
+
+<style>
+  /* Auth check visibility logic */
+  [data-auth-state="loading"] [data-editor-wrapper],
+  [data-auth-state="logged-out"] [data-editor-wrapper],
+  [data-auth-state="denied"] [data-editor-wrapper] {
+    display: none;
+  }
+  
+  [data-auth-state="loading"] [data-auth-check],
+  [data-auth-state="logged-out"] [data-auth-check],
+  [data-auth-state="denied"] [data-auth-check] {
+    display: block;
+  }
+  
+  [data-auth-state="logged-in"] [data-auth-check] {
+    display: none;
+  }
+  
+  [data-auth-state="logged-in"] [data-editor-wrapper] {
+    display: block;
+  }
+</style>
+
+<div data-auth-state="loading" style="height: 100%;">
+  
+  <div data-auth-check class="not-admin-message">
+    <h2>Loading...</h2>
+    <p>Checking permissions...</p>
+  </div>
+  
+  <div data-editor-wrapper style="height: 100%;">
+    {% enhance %}
+      <content-editor></content-editor>
+    {% endenhance %}
+  </div>
+</div>
+
+<script type="module">
+  // Small helper so we can write HTML without awkward quote escaping
+  const html = (strings, ...values) =>
+    strings.reduce((out, str, i) => out + str + (values[i] ?? ""), "");
+
+  const container = document.querySelector('[data-auth-state]');
+  const authCheck = document.querySelector('[data-auth-check]');
+  
+  async function checkAuth() {
+    try {
+      const user = await db.getAuth();
+      if (user && user.email === 'bass41992ben@gmail.com') {
+        container.setAttribute('data-auth-state', 'logged-in');
+      } else if (user) {
+        container.setAttribute('data-auth-state', 'denied');
+        authCheck.innerHTML = html`
+          <h2>Access Denied</h2>
+          <p>You don't have permission.</p>
+          <p><a href="/admin/">← Back</a></p>
+        `;
+      } else {
+        container.setAttribute('data-auth-state', 'logged-out');
+        authCheck.innerHTML = html`
+          <h2>Please Sign In</h2>
+          <p><a href="/admin/">Sign in here</a></p>
+        `;
+      }
+    } catch (e) {
+      container.setAttribute('data-auth-state', 'logged-out');
+      authCheck.innerHTML = html`
+        <h2>Please Sign In</h2>
+        <p><a href="/admin/">Sign in here</a></p>
+      `;
+    }
+  }
+  
+  checkAuth();
+</script>
