@@ -182,7 +182,6 @@ export default function MusicUploader({ html, state }) {
     </div>
     
     <script type="module">
-      
       class MusicUploaderElement extends HTMLElement {
         constructor() {
           super();
@@ -192,7 +191,7 @@ export default function MusicUploader({ html, state }) {
           // Check admin access
           try {
             const user = await db.getAuth();
-            if (!user || !user.idAdmin) {
+            if (!user || !user.isAdmin) {
               this.innerHTML = '<p>Access denied. Admin only.</p>';
               return;
             }

@@ -29,15 +29,11 @@
 	<script type="module">{% include "node_modules/@zachleat/heading-anchors/heading-anchors.js" %}</script>
 
 	<script src="{{ "/assets/instantdb.js" | url }}"></script>
-	<script type="module">
-		import { init, i, id } from "/assets/instantdb.js";
-	
-		const APP_ID = '4744b006-aabe-48be-8b67-08bc76fcbd72';
-		const ADMIN_EMAIL = 'bass41992ben@gmail.com';
-		
-		// Initialize the database
-		const db = init({ appId: APP_ID });
-
+	<script>
+		import { init, i, id } from "/assets/instantdb.js"
+		// Initialize InstantDB globally so all scripts can use `db`
+		var APP_ID = '4744b006-aabe-48be-8b67-08bc76fcbd72';
+		var db = init({ appId: APP_ID });
 	</script>
 </head>
 	<body>

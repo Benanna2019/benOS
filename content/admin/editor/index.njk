@@ -41,41 +41,8 @@ eleventyExcludeFromCollections: true
   </div>
 </div>
 
-<script type="module">
-  // Small helper so we can write HTML without awkward quote escaping
-  const html = (strings, ...values) =>
-    strings.reduce((out, str, i) => out + str + (values[i] ?? ""), "");
-
+<script>
+  // Layout already handles auth - just show content
   const container = document.querySelector('[data-auth-state]');
-  const authCheck = document.querySelector('[data-auth-check]');
-  
-  async function checkAuth() {
-    try {
-      const user = await db.getAuth();
-      if (user && user.email === 'bass41992ben@gmail.com') {
-        container.setAttribute('data-auth-state', 'logged-in');
-      } else if (user) {
-        container.setAttribute('data-auth-state', 'denied');
-        authCheck.innerHTML = html`
-          <h2>Access Denied</h2>
-          <p>You don't have permission.</p>
-          <p><a href="/admin/">← Back</a></p>
-        `;
-      } else {
-        container.setAttribute('data-auth-state', 'logged-out');
-        authCheck.innerHTML = html`
-          <h2>Please Sign In</h2>
-          <p><a href="/admin/">Sign in here</a></p>
-        `;
-      }
-    } catch (e) {
-      container.setAttribute('data-auth-state', 'logged-out');
-      authCheck.innerHTML = html`
-        <h2>Please Sign In</h2>
-        <p><a href="/admin/">Sign in here</a></p>
-      `;
-    }
-  }
-  
-  checkAuth();
+  container.setAttribute('data-auth-state', 'logged-in');
 </script>

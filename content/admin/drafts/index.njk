@@ -63,93 +63,57 @@ eleventyExcludeFromCollections: true
   </div>
 </div>
 
-<script type="module">
-
-  // Small helper so we can write HTML without awkward quote escaping
+<script>
+  // html helper for template literals
   const html = (strings, ...values) =>
-    strings.reduce((out, str, i) => out + str + (values[i] ?? ""), "");
+    strings.reduce((out, str, i) => out + str + (values[i] ?? ''), '');
 
   const container = document.querySelector('[data-auth-state]');
-  const authCheck = document.querySelector('[data-auth-check]');
-  const loadingEl = document.querySelector('[data-loading]');
   const listEl = document.querySelector('[data-drafts-list]');
   const emptyEl = document.querySelector('[data-empty]');
   
-  async function loadDrafts() {
-    try {
-      const user = await db.getAuth();
-      if (user && user.email === 'bass41992ben@gmail.com') {
-        container.setAttribute('data-auth-state', 'logged-in');
-        
-        // Subscribe to drafts
-        db.subscribeQuery({ drafts: {} }, (resp) => {
-          if (resp.error) {
-            loadingEl.innerHTML = '<p>Error loading drafts</p>';
-            return;
-          }
-          
-          // Once we have a response, remove the loader so it can't linger
-          if (loadingEl) loadingEl.remove();
-          
-          const drafts = resp.data.drafts || [];
-          
-          if (drafts.length === 0) {
-            emptyEl.style.display = 'block';
-            listEl.style.display = 'none';
-            return;
-          }
-          
-          // Sort by updatedAt desc
-          drafts.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-          
-          emptyEl.style.display = 'none';
-          listEl.style.display = 'flex';
-          
-          listEl.innerHTML = drafts.map(draft => {
-            const date = draft.updatedAt 
-              ? new Date(draft.updatedAt).toLocaleDateString('en-US', { 
-                  month: 'short', day: 'numeric', year: 'numeric' 
-                })
-              : 'Unknown date';
-            
-            const title = draft.title || 'Untitled';
-            const type = draft.contentType === 'articles' ? 'Article' : 'Tech Blog';
-            
-            return html`
-              <a href="/admin/editor/?id=${draft.id}" class="draft-card">
-                <div class="draft-info">
-                  <h3>${title}</h3>
-                  <div class="draft-meta">${type} • Last edited ${date}</div>
-                </div>
-                <span class="draft-status" data-status="${draft.status || 'draft'}">${draft.status || 'draft'}</span>
-              </a>
-            `;
-          }).join('');
-        });
-        
-      } else if (user) {
-        container.setAttribute('data-auth-state', 'denied');
-        authCheck.innerHTML = html`
-          <h2>Access Denied</h2>
-          <p>You don't have permission.</p>
-          <p><a href="/admin/">← Back</a></p>
-        `;
-      } else {
-        container.setAttribute('data-auth-state', 'logged-out');
-        authCheck.innerHTML = html`
-          <h2>Please Sign In</h2>
-          <p><a href="/admin/">Sign in here</a></p>
-        `;
-      }
-    } catch (e) {
-      console.error(e);
-      container.setAttribute('data-auth-state', 'logged-out');
-      authCheck.innerHTML = html`
-        <h2>Please Sign In</h2>
-        <p><a href="/admin/">Sign in here</a></p>
-      `;
-    }
-  }
+  // Layout already handles auth - just load drafts
+  container.setAttribute('data-auth-state', 'logged-in');
   
-  loadDrafts();
+  db.subscribeQuery({ drafts: {} }, (resp) => {
+    if (resp.error) {
+      console.error('Error loading drafts:', resp.error);
+      return;
+    }
+    
+    const drafts = resp.data.drafts || [];
+    
+    if (drafts.length === 0) {
+      emptyEl.style.display = 'block';
+      listEl.style.display = 'none';
+      return;
+    }
+    
+    // Sort by updatedAt desc
+    drafts.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    
+    emptyEl.style.display = 'none';
+    listEl.style.display = 'flex';
+    
+    listEl.innerHTML = drafts.map(draft => {
+      const date = draft.updatedAt 
+        ? new Date(draft.updatedAt).toLocaleDateString('en-US', { 
+            month: 'short', day: 'numeric', year: 'numeric' 
+          })
+        : 'Unknown date';
+      
+      const title = draft.title || 'Untitled';
+      const type = draft.contentType === 'articles' ? 'Article' : 'Tech Blog';
+      
+      return html`
+        <a href="/admin/editor/?id=${draft.id}" class="draft-card">
+          <div class="draft-info">
+            <h3>${title}</h3>
+            <div class="draft-meta">${type} • Last edited ${date}</div>
+          </div>
+          <span class="draft-status" data-status="${draft.status || 'draft'}">${draft.status || 'draft'}</span>
+        </a>
+      `;
+    }).join('');
+  });
 </script>

@@ -167,17 +167,28 @@ layout: layouts/base.njk
 </div>
 
 <script type="module">
-  import { bootstrapAdminFlag, requireAdminOrRedirect } from '/shared/instant.mjs';
-
+  const ADMIN_EMAIL = 'bass41992ben@gmail.com';
+  
   const shell = document.querySelector('[data-admin-shell]');
   const gate = document.querySelector('[data-admin-gate]');
 
-  // Gate all admin routes using server-enforced permissions (no email globals).
-  // Also attempts to set `$users.isAdmin=true` for the real admin account.
-  await bootstrapAdminFlag();
-  const ok = await requireAdminOrRedirect('/admin/login/');
-  if (ok) {
-    if (gate) gate.remove();
-    if (shell) shell.dataset.hidden = 'false';
+  async function checkAdmin() {
+    try {
+      const user = await db.getAuth();
+      if (user && user.email === ADMIN_EMAIL) {
+        // User is admin - show the shell
+        if (gate) gate.remove();
+        if (shell) shell.dataset.hidden = 'false';
+      } else {
+        // Not admin or not logged in - redirect to login
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.replace(`/admin/login/?next=${next}`);
+      }
+    } catch (e) {
+      console.error('Admin check failed:', e);
+      window.location.replace('/admin/login/');
+    }
   }
+  
+  checkAdmin();
 </script>

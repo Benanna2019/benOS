@@ -93,8 +93,6 @@ export default function AuthLogin({ html, state }) {
     </div>
     
     <script type="module">
-
-      
       class AuthLoginElement extends HTMLElement {
         constructor() {
           super();
@@ -129,6 +127,21 @@ export default function AuthLogin({ html, state }) {
           // Check if already logged in
           this.checkAuth();
         }
+
+        getRedirectTarget() {
+          try {
+            const url = new URL(window.location.href);
+            // allow /admin/login/?next=/admin/editor/
+            return url.searchParams.get('next') || '/admin/';
+          } catch {
+            return '/admin/';
+          }
+        }
+
+        redirectAfterLogin() {
+          // Use replace to avoid back-button loops between login/admin gate
+          window.location.replace(this.getRedirectTarget());
+        }
         
         async checkAuth() {
           try {
@@ -138,6 +151,9 @@ export default function AuthLogin({ html, state }) {
                 detail: { user },
                 bubbles: true 
               }));
+              // IMPORTANT: Do NOT auto-redirect just because the user is logged in.
+              // This can create redirect loops when admin gating is enabled.
+              // We only redirect after a successful login verification.
             }
           } catch (e) {
             // Not logged in, show login form
@@ -184,11 +200,18 @@ export default function AuthLogin({ html, state }) {
               code 
             });
             
-            const user = await db.getAuth();
-            this.dispatchEvent(new CustomEvent('auth-success', { 
+            // Best-effort: get user, but redirect regardless once sign-in succeeds
+            let user = null;
+            try {
+              user = await db.getAuth();
+            } catch {}
+
+            this.dispatchEvent(new CustomEvent('auth-success', {
               detail: { user },
-              bubbles: true 
+              bubbles: true
             }));
+
+            this.redirectAfterLogin();
           } catch (err) {
             this.showError(this.errorCodeEl, err.body?.message || 'Invalid code');
             this.codeInput.value = '';

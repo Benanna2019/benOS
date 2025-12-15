@@ -262,7 +262,6 @@ export default function AudioPlayer({ html, state }) {
     </div>
     
     <script type="module">
-      
       const ROOM_ID = 'music-room'; // Global music room
       
       class AudioPlayerElement extends HTMLElement {

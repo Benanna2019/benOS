@@ -85,36 +85,9 @@ eleventyExcludeFromCollections: true
   </div>
 </div>
 
-<script type="module">
-
+<script>
+  // Layout already handles auth - just show dashboard
   const container = document.querySelector('[data-auth-state]');
-  
-  async function checkAuth() {
-    try {
-      const user = await db.getAuth();
-      if (user) {
-        container.setAttribute('data-auth-state', 'logged-in');
-        container.setAttribute('data-is-admin', user.email === 'bass41992ben@gmail.com' ? 'true' : 'false');
-      } else {
-        container.setAttribute('data-auth-state', 'logged-out');
-      }
-    } catch (e) {
-      container.setAttribute('data-auth-state', 'logged-out');
-    }
-  }
-  
-  // Listen for auth events
-  document.addEventListener('auth-success', (e) => {
-    const user = e.detail.user;
-    container.setAttribute('data-auth-state', 'logged-in');
-    container.setAttribute('data-is-admin', user.email === 'bass41992ben@gmail.com' ? 'true' : 'false');
-  });
-  
-  document.addEventListener('auth-logout', () => {
-    container.setAttribute('data-auth-state', 'logged-out');
-    container.removeAttribute('data-is-admin');
-  });
-  
-  // Initial check
-  checkAuth();
+  container.setAttribute('data-auth-state', 'logged-in');
+  container.setAttribute('data-is-admin', 'true');
 </script>
