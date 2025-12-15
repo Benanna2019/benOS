@@ -192,7 +192,7 @@ export default function MusicUploader({ html, state }) {
           // Check admin access
           try {
             const user = await db.getAuth();
-            if (!user || user.email !== ADMIN_EMAIL) {
+            if (!user || !user.idAdmin) {
               this.innerHTML = '<p>Access denied. Admin only.</p>';
               return;
             }

@@ -167,12 +167,14 @@ layout: layouts/base.njk
 </div>
 
 <script type="module">
-  import { requireAdminOrRedirect } from '/shared/instant.mjs';
+  import { bootstrapAdminFlag, requireAdminOrRedirect } from '/shared/instant.mjs';
 
   const shell = document.querySelector('[data-admin-shell]');
   const gate = document.querySelector('[data-admin-gate]');
 
   // Gate all admin routes using server-enforced permissions (no email globals).
+  // Also attempts to set `$users.isAdmin=true` for the real admin account.
+  await bootstrapAdminFlag();
   const ok = await requireAdminOrRedirect('/admin/login/');
   if (ok) {
     if (gate) gate.remove();

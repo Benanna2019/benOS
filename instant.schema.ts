@@ -8,14 +8,14 @@ const schema = i.schema({
     // Admin-only drafts for posts
     drafts: i.entity({
       title: i.string(),
-      description: i.string(),
+      description: i.string().optional(),
       content: i.string(),
       tags: i.string(),
       contentType: i.string(), // 'tech-blog' | 'articles'
-      status: i.string(), // 'draft' | 'publishing' | 'published'
-      createdAt: i.number(),
-      updatedAt: i.number(),
-      publishedAt: i.number(),
+      status: i.string().optional(), // 'draft' | 'publishing' | 'published'
+      createdAt: i.number().optional(),
+      updatedAt: i.number().optional(),
+      publishedAt: i.number().optional(),
     }),
 
     // Optional music metadata (storage is in $files)
@@ -26,27 +26,18 @@ const schema = i.schema({
       uploadedBy: i.string(),
     }),
 
-    // 1:1 profile for each user
-    profiles: i.entity({
-      isAdmin: i.boolean(),
-    }),
-
     // System namespaces for typing (Instant will manage these)
     $users: i.entity({
       email: i.string().unique().indexed(),
+      // Server-enforced admin flag. Only bootstrap admin can set this.
+      isAdmin: i.boolean().optional(),
     }),
     $files: i.entity({
       path: i.string().unique().indexed(),
       url: i.string(),
     }),
   },
-  links: {
-    // IMPORTANT: system namespace must be in reverse direction
-    profileUser: {
-      forward: { on: 'profiles', has: 'one', label: '$user' },
-      reverse: { on: '$users', has: 'one', label: 'profile' },
-    },
-  },
+  links: {},
   rooms: {},
 });
 

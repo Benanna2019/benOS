@@ -22,6 +22,22 @@ export async function canAccessDrafts() {
   }
 }
 
+/**
+ * Optional helper: attempt to set `$users.isAdmin=true` for the bootstrap admin.
+ * Safe because perms only allow the bootstrap admin user (by email) to update themselves.
+ */
+export async function bootstrapAdminFlag() {
+  try {
+    const user = await db.getAuth();
+    if (!user?.email) return false;
+    if (user.email !== 'bass41992ben@gmail.com') return false;
+    await db.transact(db.tx.$users[user.id].merge({ isAdmin: true }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function requireAdminOrRedirect(redirectTo = '/admin/login/') {
   const ok = await canAccessDrafts();
   if (!ok) {
