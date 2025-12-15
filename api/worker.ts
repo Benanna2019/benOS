@@ -6,7 +6,7 @@
  * - GET/POST /api/inngest - Inngest serve endpoint
  */
 
-import { serve } from 'inngest/edge';
+import { serve } from 'inngest/cloudflare';
 import { inngest, functions } from './inngest';
 
 interface Env {
